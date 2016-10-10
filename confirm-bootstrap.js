@@ -18,20 +18,21 @@
  * ========================================================== */
 
 
- (function($) {
-    $.fn.confirmModal = function(opts)
-    {
+(function ($) {
+    $.fn.confirmModal = function (opts) {
         var body = $('body');
-        var defaultOptions    = {
-            confirmTitle     : 'Please confirm',
-            confirmMessage   : 'Are you sure you want to perform this action ?',
-            confirmOk        : 'Yes',
-            confirmCancel    : 'Cancel',
-            confirmDirection : 'rtl',
-            confirmStyle     : 'primary',
-            confirmCallback  : defaultCallback,
-            confirmDismiss   : true,
-            confirmAutoOpen  : false
+        var defaultOptions = {
+            confirmTitle: 'Please confirm',
+            confirmMessage: 'Are you sure you want to perform this action ?',
+            confirmOk: 'Yes',
+            confirmNoCancelBtn: false,      //Andy Yi. Add to make confirmation window to show one message only.
+            confirmCancel: 'Cancel',
+            confirmDirection: 'rtl',
+            confirmStyle: 'primary',
+            confirmCallback: defaultCallback,
+            dismissCallback: undefined,
+            confirmDismiss: true,
+            confirmAutoOpen: false
         };
         var options = $.extend(defaultOptions, opts);
 
@@ -52,24 +53,22 @@
                     '</div>' +
                 '</div>' +
             '</div>'
-            ;
+        ;
 
-        return this.each(function(index)
-        {
+        return this.each(function (index) {
             var confirmLink = $(this);
-            var targetData  = confirmLink.data();
+            var targetData = confirmLink.data();
 
             var currentOptions = $.extend(options, targetData);
 
-            var modalId = "confirmModal" + Math.floor(Math.random()*(1e+9));
+            var modalId = "confirmModal" + Math.floor(Math.random() * (1e+9));
             var modalTemplate = headModalTemplate;
             var buttonTemplate =
-                '<button class="btn btn-default" data-dismiss="modal">#Cancel#</button>' +
+                (options.confirmNoCancelBtn ? '' : '<button class="btn btn-default" data-dismiss="modal">#Cancel#</button>') +
                 '<button class="btn btn-#Style#" data-dismiss="ok">#Ok#</button>'
             ;
 
-            if(options.confirmDirection == 'ltr')
-            {
+            if (options.confirmDirection == 'ltr') {
                 buttonTemplate =
                     '<button class="btn btn-#Style#" data-dismiss="ok">#Ok#</button>' +
                     '<button class="btn btn-default" data-dismiss="modal">#Cancel#</button>'
@@ -77,14 +76,12 @@
             }
 
             var confirmTitle = options.confirmTitle;
-            if(typeof options.confirmTitle == 'function')
-            {
+            if (typeof options.confirmTitle == 'function') {
                 confirmTitle = options.confirmTitle.call(this);
             }
 
             var confirmMessage = options.confirmMessage;
-            if(typeof options.confirmMessage == 'function')
-            {
+            if (typeof options.confirmMessage == 'function') {
                 confirmMessage = options.confirmMessage.call(this);
             }
 
@@ -103,17 +100,26 @@
 
             var confirmModal = $('#' + modalId);
 
-            confirmLink.on('click', function(modalEvent)
-            {
+            confirmLink.on('click', function (modalEvent) {
                 modalEvent.preventDefault();
                 confirmModal.modal('show');
             });
 
-            $('button[data-dismiss="ok"]', confirmModal).on('click', function(event) {
+            $('button[data-dismiss="ok"]', confirmModal).on('click', function (event) {
                 if (options.confirmDismiss) {
                     confirmModal.modal('hide');
                 }
                 options.confirmCallback(confirmLink, confirmModal);
+            });
+
+            $('button[data-dismiss="modal"]', confirmModal).on('click', function (event) {
+                confirmModal.modal('hide');
+
+                //Andy: Add dismiss callback method to allow user to do something if clicking "cancel" button
+                if (options.dismissCallback) {
+                    options.dismissCallback(confirmLink, confirmModal);
+                }
+                
             });
 
             if (options.confirmAutoOpen) {
@@ -121,8 +127,7 @@
             }
         });
 
-        function defaultCallback(target, modal)
-        {
+        function defaultCallback(target, modal) {
             window.location = $(target).attr('href');
         }
     };
